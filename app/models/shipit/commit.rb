@@ -269,7 +269,7 @@ module Shipit
     end
 
     def deployed?
-      stack.last_deployed_commit.id >= id
+      stack.last_successful_deploy_commit.id >= id
     end
 
     def deploy_failed?
