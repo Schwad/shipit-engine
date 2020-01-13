@@ -116,11 +116,14 @@ jobs:
       env:
         RAILS_ENV: test
         DATABASE_URL: 'mysql2://root@localhost:${{ job.services.db.ports[3306] }}'
+        PORT: ${{ job.services.db.ports[3306] }}
       run: |
+        echo $DATABASE_URL
+        mysqladmin ping -h"127.0.0.1" -P"$PORT"
         sudo apt-get -yqq install libpq-dev libsqlite3-dev libmysqlclient-dev
         gem install bundler:1.17.3
         bundle config path vendor/bundle
         bundle install --jobs 4 --retry 3
-        cp test/dummy/config/database.postgresql.yml test/dummy/config/database.yml
+        cp test/dummy/config/database.mysql.yml test/dummy/config/database.yml
         bundle exec rake db:create db:schema:load test
         bundle exec rake db:seed
