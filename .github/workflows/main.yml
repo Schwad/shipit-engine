@@ -19,7 +19,7 @@ jobs:
         key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
         restore-keys: |
           ${{ runner.os }}-gems-
-    - name: Run tests
+    - name: rubocop
       run: |
         sudo apt-get -yqq install libpq-dev libsqlite3-dev libmysqlclient-dev
         gem install bundler:1.17.3
@@ -30,6 +30,11 @@ jobs:
   build:
     name: Rails unit tests with Postgres
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby_version:
+          - 2.5.3
+          - 2.6.3
 
     services:
       db:
@@ -48,10 +53,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Ruby 2.5
+    - name: Set up Ruby ${{ matrix.ruby_version }}
       uses: actions/setup-ruby@v1
       with:
-        ruby-version: 2.5.x
+        ruby-version: ${{ matrix.ruby_version }}
     - uses: actions/cache@v1
       with:
         path: vendor/bundle
