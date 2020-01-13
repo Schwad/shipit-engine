@@ -90,7 +90,7 @@ jobs:
       db:
         image: mysql:5.7
         ports:
-          - 3306:3306
+          - 3306
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
@@ -115,7 +115,7 @@ jobs:
     - name: Run tests
       env:
         RAILS_ENV: test
-        DATABASE_URL: 'mysql2://root@localhost'
+        DATABASE_URL: 'mysql2://root@localhost:${{ job.services.db.ports[3306] }}'
       run: |
         sudo apt-get -yqq install libpq-dev libsqlite3-dev libmysqlclient-dev
         gem install bundler:1.17.3
