@@ -27,8 +27,8 @@ jobs:
         bundle install --jobs 4 --retry 3
         bundle exec rubocop
 
-  build:
-    name: Rails unit tests with Postgres
+  postgres:
+    name: Tests with Postgres
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,14 +60,62 @@ jobs:
     - uses: actions/cache@v1
       with:
         path: vendor/bundle
-        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        key: ${{ runner.os }}-${{ matrix.ruby_version }}-gems-${{ hashFiles('**/Gemfile.lock') }}
         restore-keys: |
-          ${{ runner.os }}-gems-
+          ${{ runner.os }}-${{ matrix.ruby_version }}-gems-
     - name: Run tests
       env:
         PGHOST: 127.0.0.1
         PGUSER: postgres
         RAILS_ENV: test
+      run: |
+        sudo apt-get -yqq install libpq-dev libsqlite3-dev libmysqlclient-dev
+        gem install bundler:1.17.3
+        bundle config path vendor/bundle
+        bundle install --jobs 4 --retry 3
+        cp test/dummy/config/database.postgresql.yml test/dummy/config/database.yml
+        bundle exec rake db:create db:schema:load test
+        bundle exec rake db:seed
+
+  mysql:
+    name: Tests with MySQL
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby_version:
+          - 2.5.3
+          - 2.6.3
+
+    services:
+      db:
+        image: mysql:5.7
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+      redis:
+        image: redis
+        ports:
+        - 6379:6379
+        options: --entrypoint redis-server
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Ruby ${{ matrix.ruby_version }}
+      uses: actions/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby_version }}
+    - uses: actions/cache@v1
+      with:
+        path: vendor/bundle
+        key: ${{ runner.os }}-${{ matrix.ruby_version }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.ruby_version }}-gems-
+    - name: Run tests
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: 'mysql2://root@localhost'
       run: |
         sudo apt-get -yqq install libpq-dev libsqlite3-dev libmysqlclient-dev
         gem install bundler:1.17.3
